@@ -6,8 +6,8 @@ package test
 import (
 	"testing"
 
-	"github.com/alexellis/faas-netes/handlers"
-	"github.com/alexellis/faas/gateway/requests"
+	"github.com/openfaas/faas-netes/handlers"
+	"github.com/openfaas/faas/gateway/requests"
 )
 
 func Test_ValidateDeployRequest_ValidCharacters(t *testing.T) {
@@ -16,9 +16,9 @@ func Test_ValidateDeployRequest_ValidCharacters(t *testing.T) {
 		value    string
 	}{
 		{"lower", "abz"},
-		{"upper", "ABZ"},
-		{"upper and lower mixed", "AbZ"},
-		{"includes dashes", "test-function"},
+		{"includes hyphen", "test-function"},
+		{"can start with a digit", "1abz"},
+		{"can end with a digit", "abz1"},
 	}
 
 	for _, testCase := range cases {
@@ -39,8 +39,12 @@ func Test_ValidateDeployRequest_InvalidCharacters(t *testing.T) {
 		scenario string
 		value    string
 	}{
+		{"upper", "ABZ"},
+		{"upper and lower mixed", "AbZ"},
 		{"includes hash", "#faas"},
 		{"includes underscore", "test_function"},
+		{"ends with hyphen", "testfunction-"},
+		{"starts with hyphen", "-testfunction"},
 	}
 
 	for _, testCase := range cases {

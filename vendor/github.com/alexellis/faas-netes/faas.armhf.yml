@@ -38,6 +38,9 @@ spec:
         ports:
         - containerPort: 8080
           protocol: TCP
+        resources:
+          limits:
+            memory: 512Mi 
 ---
 apiVersion: v1
 kind: Service
@@ -68,7 +71,7 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: functions/gateway:armhf-0.6.5
+        image: functions/gateway:0.6.7-armhf
 #k8s-monitoring-dev
         imagePullPolicy: Always
         env:
@@ -81,4 +84,7 @@ spec:
         ports:
         - containerPort: 8080
           protocol: TCP
+        resources:
+          limits:
+            memory: 512Mi  
 

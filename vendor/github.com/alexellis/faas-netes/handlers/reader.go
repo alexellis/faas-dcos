@@ -8,7 +8,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/alexellis/faas/gateway/requests"
+	"github.com/openfaas/faas/gateway/requests"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -31,12 +31,15 @@ func getServiceList(functionNamespace string, clientset *kubernetes.Clientset) (
 			replicas = uint64(*item.Spec.Replicas)
 		}
 
+		labels := item.Spec.Template.Labels
 		function := requests.Function{
 			Name:            item.Name,
 			Replicas:        replicas,
 			Image:           item.Spec.Template.Spec.Containers[0].Image,
 			InvocationCount: 0,
+			Labels:          &labels,
 		}
+
 		functions = append(functions, function)
 	}
 	return functions, nil
@@ -49,14 +52,14 @@ func MakeFunctionReader(functionNamespace string, clientset *kubernetes.Clientse
 		functions, err := getServiceList(functionNamespace, clientset)
 		if err != nil {
 			log.Println(err)
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
 
 		functionBytes, _ := json.Marshal(functions)
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		w.Write(functionBytes)
 	}
 }

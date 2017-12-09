@@ -4,13 +4,13 @@
 package main
 
 import (
+	"log"
 	"os"
-	"time"
 
-	"github.com/alexellis/faas-netes/handlers"
-	"github.com/alexellis/faas-provider"
-	bootTypes "github.com/alexellis/faas-provider/types"
-
+	"github.com/openfaas/faas-netes/handlers"
+	"github.com/openfaas/faas-netes/types"
+	"github.com/openfaas/faas-provider"
+	bootTypes "github.com/openfaas/faas-provider/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -33,10 +33,22 @@ func main() {
 		panic(err.Error())
 	}
 
+	readConfig := types.ReadConfig{}
+	osEnv := types.OsEnv{}
+	cfg := readConfig.Read(osEnv)
+
+	log.Printf("HTTP Read Timeout: %s\n", cfg.ReadTimeout)
+	log.Printf("HTTP Write Timeout: %s\n", cfg.WriteTimeout)
+	log.Printf("Function Readiness Probe Enabled: %v\n", cfg.EnableFunctionReadinessProbe)
+
+	deployConfig := &handlers.DeployHandlerConfig{
+		EnableFunctionReadinessProbe: cfg.EnableFunctionReadinessProbe,
+	}
+
 	bootstrapHandlers := bootTypes.FaaSHandlers{
 		FunctionProxy:  handlers.MakeProxy(functionNamespace),
 		DeleteHandler:  handlers.MakeDeleteHandler(functionNamespace, clientset),
-		DeployHandler:  handlers.MakeDeployHandler(functionNamespace, clientset),
+		DeployHandler:  handlers.MakeDeployHandler(functionNamespace, clientset, deployConfig),
 		FunctionReader: handlers.MakeFunctionReader(functionNamespace, clientset),
 		ReplicaReader:  handlers.MakeReplicaReader(functionNamespace, clientset),
 		ReplicaUpdater: handlers.MakeReplicaUpdater(functionNamespace, clientset),
@@ -46,8 +58,8 @@ func main() {
 	var port int
 	port = 8080
 	bootstrapConfig := bootTypes.FaaSConfig{
-		ReadTimeout:  time.Second * 8,
-		WriteTimeout: time.Second * 8,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
 		TCPPort:      &port,
 	}
 

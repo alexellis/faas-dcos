@@ -8,11 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/alexellis/faas/gateway/requests"
+	"github.com/openfaas/faas/gateway/requests"
 	v1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -37,10 +36,12 @@ func MakeDeleteHandler(functionNamespace string, clientset *kubernetes.Clientset
 		getOpts := metav1.GetOptions{}
 
 		// This makes sure we don't delete non-labelled deployments
-		deployment, findDeployErr := clientset.Extensions().Deployments(functionNamespace).Get(request.FunctionName, getOpts)
+		deployment, findDeployErr := clientset.ExtensionsV1beta1().
+			Deployments(functionNamespace).
+			Get(request.FunctionName, getOpts)
 
 		if findDeployErr != nil {
-			if errors.IsNotFound(err) {
+			if errors.IsNotFound(findDeployErr) {
 				w.WriteHeader(http.StatusNotFound)
 			} else {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -71,9 +72,13 @@ func isFunction(deployment *v1beta1.Deployment) bool {
 }
 
 func deleteFunction(functionNamespace string, clientset *kubernetes.Clientset, request requests.DeleteFunctionRequest, w http.ResponseWriter) {
-	opts := &metav1.DeleteOptions{}
+	foregroundPolicy := metav1.DeletePropagationForeground
+	opts := &metav1.DeleteOptions{PropagationPolicy: &foregroundPolicy}
 
-	if deployErr := clientset.Extensions().Deployments(functionNamespace).Delete(request.FunctionName, opts); deployErr != nil {
+	if deployErr := clientset.ExtensionsV1beta1().
+		Deployments(functionNamespace).
+		Delete(request.FunctionName, opts); deployErr != nil {
+
 		if errors.IsNotFound(deployErr) {
 			w.WriteHeader(http.StatusNotFound)
 		} else {
@@ -83,7 +88,10 @@ func deleteFunction(functionNamespace string, clientset *kubernetes.Clientset, r
 		return
 	}
 
-	if svcErr := clientset.Core().Services(functionNamespace).Delete(request.FunctionName, opts); svcErr != nil {
+	if svcErr := clientset.CoreV1().
+		Services(functionNamespace).
+		Delete(request.FunctionName, opts); svcErr != nil {
+
 		if errors.IsNotFound(svcErr) {
 			w.WriteHeader(http.StatusNotFound)
 		} else {

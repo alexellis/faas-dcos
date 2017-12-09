@@ -33,11 +33,16 @@ spec:
       serviceAccountName: faas-controller
       containers:
       - name: faas-netesd
-        image: functions/faas-netesd:0.3-alpha6
+        image: functions/faas-netesd:0.3.4
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
           protocol: TCP
+        resources:
+          requests:
+            memory: 20Mi
+          limits:
+            memory: 30Mi 
 ---
 apiVersion: v1
 kind: Service
@@ -68,8 +73,7 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: functions/gateway:0.6.6-beta
-#k8s-monitoring-dev
+        image: functions/gateway:0.6.13
         imagePullPolicy: Always
         env:
         - name: functions_provider_url
@@ -77,4 +81,8 @@ spec:
         ports:
         - containerPort: 8080
           protocol: TCP
-
+        resources:
+          requests:
+            memory: 20Mi
+          limits:
+            memory: 30Mi
